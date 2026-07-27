@@ -12,6 +12,9 @@ Quick links:
 - [BBQr Rust implementation](https://github.com/satoshiportal/bbqr-rust)
 - [Dart language bindings for BBQr-rust](https://github.com/SatoshiPortal/bbqr-dart)
 - [iOS/MacOS and Android bindings for BBQr library using uniFFI](https://github.com/bitcoinppl/bbqr-ffi)
+- [Swift implementation](https://github.com/bitcoinppl/bbqr-swift)
+- [Kotlin implementation](https://github.com/gorunjinian/bbqr-kotlin)
+- [Go implementation](https://github.com/dmonakhov/bbqr-go)
 
 # Specification
 
@@ -73,22 +76,32 @@ Created 'example.png' with 8 frames.
 
 # Supporting Projects
 
-Here’s the markdown version of the updated table you asked for:
+Verified against released public code on July 27, 2026. **Display** means the
+project can produce BBQr; **Scan** means it can decode BBQr. Products that share
+a library or inherit an implementation are still listed as products, not
+counted as independent protocol implementations.
 
-| Name                  | Display | Scan | Link                                                                 |
-|-----------------------|:-------:|:----:|----------------------------------------------------------------------|
-| COLDCARD Q            | Y       | Y    | [Coldcard Q (Coinkite)](https://coldcard.com)                        |
-| COLDCARD Mk4          | Y       | N    | [Coldcard Mk4 (Coinkite)](https://coldcard.com)                      |
-| Sparrow Wallet        | Y       | Y    | [Sparrow Wallet](https://sparrowwallet.com)                          |
-| Nunchuk               | Y       | Y    | [Nunchuk Wallet](https://nunchuk.app)                                |
-| BTCPay Server         | Y       | Y    | [BTCPay Server](https://btcpayserver.org)                            |
-| Krux                  | Y       | Y    | [Krux Firmware](https://github.com/krux-wallet)                      |
-| LabelBase             | Y       | Y    | [Labelbase](https://labelbase.org)                                   |
-| FullyNoded            | Y       | Y    | [Fully Noded](https://fullynoded.app)                                |
-| Trident AnchorWatch   | Y       | Y    | [Trident Vault / AnchorWatch](https://anchorwatch.com)               |
-| Cove Wallet           | Y       | Y    | [Cove Wallet](https://github.com/bitcoinppl/cove)                    |
-| BullBitcoin Wallet    | Y       | Y    | [BULL Wallet (Bull Bitcoin)](https://bullbitcoin.com/blog/bull-by-bull-bitcoin) |
-| Bitcoin-Safe          | Y       | Y    | [Bitcoin-Safe (Desktop Wallet)](https://bitcoin-safe.org/en/features/readme/#comprehensive-feature-list) |
+| Name               | Display | Scan | Notes | Link |
+|--------------------|:-------:|:----:|-------|------|
+| COLDCARD Q         | Y | Y | Hardware signer | [COLDCARD Q](https://coldcard.com/q) |
+| Sparrow Wallet     | Y | Y | Desktop wallet | [Sparrow Wallet](https://sparrowwallet.com) |
+| Nunchuk Desktop    | Y | Y | Desktop wallet | [Nunchuk Wallet](https://nunchuk.app) |
+| BTCPay Server      | Y | Y | Payment server and wallet coordinator | [BTCPay Server](https://btcpayserver.org) |
+| Krux               | Y | Y | Hardware signer firmware | [Krux Firmware](https://github.com/krux-wallet) |
+| Fully Noded        | Y | Y | iOS wallet | [Fully Noded](https://fullynoded.app) |
+| Cove Wallet        | Y | Y | iOS wallet | [Cove Wallet](https://github.com/bitcoinppl/cove) |
+| BULL Wallet        | Y | Y | Mobile wallet | [BULL Wallet](https://bullbitcoin.com/blog/bull-by-bull-bitcoin) |
+| Bitcoin Safe       | Y | Y | Desktop wallet | [Bitcoin Safe](https://bitcoin-safe.org/en/features/readme/#comprehensive-feature-list) |
+| BlueWallet         | Y | Y | Mobile wallet | [BlueWallet](https://github.com/BlueWallet/BlueWallet) |
+| Birch Wallet       | Y | Y | iOS wallet; uses the shared Swift library | [Birch Wallet](https://github.com/Birch-Wallet/birch-wallet) |
+| Cypher Box         | Y | Y | Mobile wallet derived from BlueWallet | [Cypher Box](https://github.com/CypherBoxLLC/Cypher-Box) |
+| MetroVault         | Y | Y | Android signing wallet; uses the Kotlin implementation | [MetroVault](https://github.com/gorunjinian/MetroVault) |
+| Ashigaru Desktop   | Y | Y | Desktop wallet derived from Sparrow | [Ashigaru Desktop](https://github.com/linkinparkrulz/ashigaru-desktop) |
+| SeedSigner         | N | Y | Hardware signer; decode-only support in version 0.8.7 | [SeedSigner](https://github.com/SeedSigner/seedsigner) |
+| Signing Room       | Y | Y | PSBT coordinator; not a wallet | [Signing Room](https://github.com/scarlin90/signingroom) |
+
+LabelBase and Trident/AnchorWatch have previously reported BBQr support, but a
+released public implementation was not available for this verification pass.
 
 # Code Examples
 

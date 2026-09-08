@@ -17,8 +17,9 @@ The file type `M`, as in m-of-n, is reserved upstream, and this
 document proposes its assignment ('S' is taken: Coldcard key teleport
 already rides BBQr with de facto codes R, S and E). The convention is
 reusable by later extensions: claim one type character, define a fixed
-payload prefix, recover to an inner (type, data) pair. Decoders
-without the extension reject a type `M` series as unknown. A single
+payload prefix, recover to an inner (type, data) pair. A decoder
+without the extension sees a file type it does not know and must not
+present that payload as the data, as with any reserved code; a single
 share never reaches the user as their data.
 
 This document is the specification. The Go package beside it

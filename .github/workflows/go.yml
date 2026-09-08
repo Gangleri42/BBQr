@@ -1,0 +1,21 @@
+name: Go
+on:
+  push:
+    paths: ['go/**', '.github/workflows/go.yml']
+  pull_request:
+    paths: ['go/**', '.github/workflows/go.yml']
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: go
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go/go.mod
+      - run: test -z "$(gofmt -l .)"
+      - run: go vet ./...
+      - run: go test ./...
+      - run: python3 shamir/testdata/check_vectors.py

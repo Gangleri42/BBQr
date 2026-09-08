@@ -2,13 +2,12 @@ package main
 
 import (
 	"bytes"
+	"math/rand"
 	"slices"
 	"strings"
 	"testing"
 
 	"github.com/Gangleri42/BBQr/go/bbqr"
-	"seedhammer.com/bc/urtypes"
-	"seedhammer.com/bip380"
 	"github.com/Gangleri42/BBQr/go/shamir"
 )
 
@@ -214,37 +213,6 @@ func TestUsageError(t *testing.T) {
 	}
 }
 
-// TestCombineDescriptor: the machine's share plates seal the
-// descriptor's crypto-output CBOR; -descriptor prints it back as
-// descriptor text, the form a wallet loads.
-func TestCombineDescriptor(t *testing.T) {
-	const want = "wsh(sortedmulti(2,xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8,xpub661MyMwAqRbcFW31YEwpkMuc5THy2PSt5bDMsktWQcFF8syAmRUapSCGu8ED9W6oDMSgv6Zz8idoc4a6mr8BDzTJY47LJhkJ8UB7WEGuduB/0/*))"
-	desc, err := bip380.Parse(want)
-	if err != nil {
-		t.Fatal(err)
-	}
-	cbor := urtypes.EncodeDescriptor(desc)
-	var parts bytes.Buffer
-	if err := run(bytes.NewReader(cbor), &parts, &bytes.Buffer{}, []string{"split", "-k", "2", "-n", "3", "-type", "C"}); err != nil {
-		t.Fatal(err)
-	}
-	groups := strings.Split(strings.TrimSpace(parts.String()), "\n\n")
-	in := groups[0] + "\n\n" + groups[2] + "\n"
-	var out, stderr bytes.Buffer
-	if err := run(strings.NewReader(in), &out, &stderr, []string{"combine", "-descriptor"}); err != nil {
-		t.Fatal(err)
-	}
-	// The CBOR normalizes key metadata, so the text round-trips
-	// through its parse: same wallet, canonical serialization.
-	back, err := bip380.Parse(strings.TrimSpace(out.String()))
-	if err != nil {
-		t.Fatalf("recovered text does not parse: %v", err)
-	}
-	if !bytes.Equal(urtypes.EncodeDescriptor(back), cbor) {
-		t.Fatalf("recovered %q, want the wallet of %q", out.String(), want)
-	}
-}
-
 // TestSubcommandHelp: -h prints usage and succeeds instead of exiting
 // with an error.
 func TestSubcommandHelp(t *testing.T) {
@@ -258,14 +226,11 @@ func TestSubcommandHelp(t *testing.T) {
 // TestSplitDerived: split -derived reproduces run for run, the default
 // randomized profile does not, and the derived shares combine.
 func TestSplitDerived(t *testing.T) {
-	desc, err := bip380.Parse("wsh(sortedmulti(2,xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8,xpub661MyMwAqRbcFW31YEwpkMuc5THy2PSt5bDMsktWQcFF8syAmRUapSCGu8ED9W6oDMSgv6Zz8idoc4a6mr8BDzTJY47LJhkJ8UB7WEGuduB/0/*))")
-	if err != nil {
-		t.Fatal(err)
-	}
-	cbor := urtypes.EncodeDescriptor(desc)
+	data := make([]byte, 64)
+	rand.New(rand.NewSource(21)).Read(data)
 	split := func(args ...string) string {
 		var parts bytes.Buffer
-		if err := run(bytes.NewReader(cbor), &parts, &bytes.Buffer{}, append([]string{"split", "-k", "2", "-n", "3", "-type", "C"}, args...)); err != nil {
+		if err := run(bytes.NewReader(data), &parts, &bytes.Buffer{}, append([]string{"split", "-k", "2", "-n", "3"}, args...)); err != nil {
 			t.Fatal(err)
 		}
 		return parts.String()
@@ -285,7 +250,7 @@ func TestSplitDerived(t *testing.T) {
 	if err := run(strings.NewReader(groups[1]+"\n\n"+groups[2]+"\n"), &out, &bytes.Buffer{}, []string{"combine"}); err != nil {
 		t.Fatal(err)
 	}
-	if !bytes.Equal(out.Bytes(), cbor) {
+	if !bytes.Equal(out.Bytes(), data) {
 		t.Fatal("derived shares combine to different data")
 	}
 }

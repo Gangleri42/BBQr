@@ -7,7 +7,7 @@
 //	            [-minsplit N] [-maxsplit N] [-png dir] [input]
 //	bbqr decode [-limit N] [parts]
 //	bbqr split -k K -n N [-type B] [-derived] [-png dir] [input]
-//	bbqr combine [-limit N] [-descriptor] [parts]
+//	bbqr combine [-limit N] [parts]
 //
 // Parts are one QR content per line; share series are separated by
 // blank lines. Data is binary from stdin or the input file, and the
@@ -36,8 +36,6 @@ import (
 	qr "github.com/seedhammer/kortschak-qr"
 
 	"github.com/Gangleri42/BBQr/go/bbqr"
-	"seedhammer.com/bc/urtypes"
-	"seedhammer.com/bip380"
 	"github.com/Gangleri42/BBQr/go/shamir"
 )
 
@@ -80,7 +78,7 @@ func usage(w io.Writer) {
   bbqr encode [-type B] [-enc auto|H|2|Z] [-minver N] [-maxver N] [-minsplit N] [-maxsplit N] [-png dir] [input]
   bbqr decode [-limit N] [parts]
   bbqr split -k K -n N [-type B] [-derived] [-png dir] [input]
-  bbqr combine [-limit N] [-descriptor] [parts]
+  bbqr combine [-limit N] [parts]
 
 parts are one QR content per line; share series are separated by a
 blank line. data is read from stdin or the input file; recovered data
@@ -223,7 +221,6 @@ func cmdSplit(stdin io.Reader, stdout io.Writer, args []string) error {
 func cmdCombine(stdin io.Reader, stdout, stderr io.Writer, args []string) error {
 	fs := flag.NewFlagSet("combine", flag.ContinueOnError)
 	limit := fs.Int("limit", 1<<30, "recovered data size cap in bytes")
-	descText := fs.Bool("descriptor", false, "print a recovered wallet descriptor (crypto-output CBOR) as descriptor text")
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			return nil
@@ -255,20 +252,7 @@ func cmdCombine(stdin io.Reader, stdout, stderr io.Writer, args []string) error 
 	if err != nil {
 		return err
 	}
-	if *descText {
-		if rec.FileType != bbqr.TypeCBOR {
-			return fmt.Errorf("-descriptor: recovered type %c, not CBOR", rec.FileType)
-		}
-		d, err := urtypes.Parse("crypto-output", rec.Data)
-		if err != nil {
-			return fmt.Errorf("-descriptor: %w", err)
-		}
-		desc, ok := d.(*bip380.Descriptor)
-		if !ok {
-			return fmt.Errorf("-descriptor: recovered %T, not a wallet descriptor", d)
-		}
-		fmt.Fprintln(stdout, desc.Encode())
-	} else if _, err := stdout.Write(rec.Data); err != nil {
+	if _, err := stdout.Write(rec.Data); err != nil {
 		return err
 	}
 	fmt.Fprintf(stderr, "recovered %d bytes, type %c\n", len(rec.Data), rec.FileType)

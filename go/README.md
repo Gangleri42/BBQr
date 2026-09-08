@@ -29,7 +29,7 @@ a wallet descriptor.
 ## Use
 
 ```
-go get github.com/Gangleri42/BBQr/go@go/v0.1.0
+go get github.com/Gangleri42/BBQr/go@v0.1.0
 ```
 
 ```
@@ -50,4 +50,4 @@ python3 go/shamir/testdata/check_vectors.py
 ```
 
 Releases are tagged `go/vX.Y.Z`, the form Go expects for a module in
-a subdirectory.
+a subdirectory; `go get` names the version without the `go/` prefix.

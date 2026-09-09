@@ -210,6 +210,7 @@ Code | File Contents
   U  | Unicode text (UTF-8 encoded, simple text)
   B  | Binary data (generic octet stream)
   X  | Executable data (platform dependant)
+  M  | Shamir share of a k-of-n split (see SHAMIR.md)
 
 _All other codes are reserved._ Please submit a PR to this repo
 to add your new types. If you are experimenting, please use "B"
@@ -222,6 +223,18 @@ Other file types will not be added unless there is a single
 well-accepted standard for how to parse the data. Typically this
 means a BIP number, or community-driven web site and implementations
 in multiple languages.
+
+### Extensions
+
+Some payloads are one piece of something larger, and no single QR
+series should ever be shown to the user as if it were the data. An
+extension covers this case by claiming one type character and
+defining a fixed prefix for its payload. What it recovers is an
+ordinary (file type, data) pair, handled like any other BBQr series.
+A decoder without the extension sees a file type it does not know
+and must not present that payload as the data, as with any reserved
+code. [SHAMIR.md](SHAMIR.md) is the first such extension: type `M`
+carries one share of a k-of-n Shamir split.
 
 ## Advanced Encodings
 

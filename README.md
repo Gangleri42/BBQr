@@ -20,6 +20,8 @@ Quick links:
 
 See full spec [BBQr.md](BBQr.md).
 
+This fork adds file type `M`, Shamir shares of a k-of-n split, specified in [SHAMIR.md](SHAMIR.md). Reference implementations: the Go module in [`go/`](go/) (package `shamir`) and [`python/bbqr/shamir.py`](python/bbqr/shamir.py); cross-implementation test vectors are in [`test_data/shamir_vectors.json`](test_data/shamir_vectors.json).
+
 # Summary
 
 This protocol enables files larger than can fit into a single QR

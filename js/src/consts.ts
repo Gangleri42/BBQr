@@ -19,6 +19,7 @@ export const FILETYPE_NAMES = {
   R: 'KT Rx',
   S: 'KT Tx',
   E: 'KT PSBT',
+  M: 'Shamir share',
 } as const;
 
 export const ENCODING_NAMES = {

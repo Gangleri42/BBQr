@@ -6,6 +6,11 @@ import { splitQRs } from '../src/split';
 import { Encoding, FileType, Version } from '../src/types';
 import { shuffled } from '../src/utils';
 
+// element-wise toEqual on large Uint8Arrays is very slow in vitest
+function same(a: Uint8Array, b: Uint8Array) {
+  return Buffer.from(a).equals(Buffer.from(b));
+}
+
 // helper to create cartesian product of arrays akin to @pytest.mark.parametrize over multiple parameters
 // https://stackoverflow.com/a/43053803
 function cartesian(...a: any[][]) {
@@ -59,12 +64,12 @@ test('Loopback', () => {
 
     const decoded = joinQRs(parts);
     expect(decoded.fileType).toBe(fileType);
-    expect(decoded.raw).toEqual(data);
+    expect(same(decoded.raw, data)).toBe(true);
 
     const randomized = shuffled(parts);
     const decoded2 = joinQRs(randomized);
     expect(decoded2.fileType).toBe(fileType);
-    expect(decoded2.raw).toEqual(data);
+    expect(same(decoded2.raw, data)).toBe(true);
 
     // try to construct a few QRs. too slow to do for every case
     if (i % 50 === 0) {
@@ -85,7 +90,7 @@ test('Minimum split', () => {
     const decoded = joinQRs(parts);
 
     expect(decoded.fileType).toBe('T');
-    expect(decoded.raw).toEqual(data);
+    expect(same(decoded.raw, data)).toBe(true);
 
     expect(producesValidQRs(parts, version)).toBe(true);
   }
@@ -133,7 +138,7 @@ test('Version 27 edge cases', () => {
     const decoded = joinQRs(parts);
 
     expect(decoded.fileType).toBe('T');
-    expect(decoded.raw).toEqual(data);
+    expect(same(decoded.raw, data)).toBe(true);
   }
 });
 
@@ -167,7 +172,7 @@ test.each(['H', '2'] as const)(`Test max size for encoding %s`, (encoding) => {
   expect(parts.length).toBe(nparts);
 
   const decoded = joinQRs(parts);
-  expect(decoded.raw).toEqual(data);
+  expect(same(decoded.raw, data)).toBe(true);
 
   // test a random part
   const idx = Math.floor(Math.random() * parts.length);

@@ -36,6 +36,13 @@ export type SplitOptions = {
    * @default 40
    */
   maxVersion?: Version;
+  /**
+   * The number of parity QR codes to add, 0 to 254. Any N parts of the resulting
+   * series (N being the number of data parts) are enough to recover the data.
+   * Has no effect when everything fits into a single QR code.
+   * @default 0
+   */
+  parity?: number;
 };
 
 export type SplitResult = {

@@ -6,7 +6,7 @@
 
 import { base32 } from '@scure/base';
 import pako from 'pako';
-import { QR_DATA_CAPACITY } from './consts';
+import { MAX_PARITY_INDEX, QR_DATA_CAPACITY } from './consts';
 import type { Encoding, SplitOptions, Version } from './types';
 
 export function hexToBytes(hex: string) {
@@ -61,7 +61,7 @@ export async function fileToBytes(file: File) {
   });
 }
 
-function joinByteParts(parts: Uint8Array[]) {
+export function joinByteParts(parts: Uint8Array[]) {
   // perf-optimized way to join Uint8Arrays
 
   const length = parts.reduce((acc, bytes) => acc + bytes.length, 0);
@@ -96,6 +96,7 @@ export function validateSplitOptions(opts: SplitOptions) {
     minSplit: opts.minSplit ?? 1,
     maxSplit: opts.maxSplit ?? 1295,
     encoding: opts.encoding ?? 'Z',
+    parity: opts.parity ?? 0,
   } as const;
 
   if (
@@ -112,6 +113,15 @@ export function validateSplitOptions(opts: SplitOptions) {
     allOpts.minSplit > allOpts.maxSplit
   ) {
     throw new Error('min/max split out of range');
+  }
+
+  // at least 2 data parts share the 256 indexes with the parity parts
+  if (
+    !Number.isInteger(allOpts.parity) ||
+    allOpts.parity < 0 ||
+    allOpts.parity >= MAX_PARITY_INDEX
+  ) {
+    throw new Error('parity out of range');
   }
 
   return allOpts;
@@ -157,22 +167,11 @@ export function versionToChars(v: Version) {
   return QR_DATA_CAPACITY[v][ecc][encoding];
 }
 
-export function encodeData(raw: Uint8Array, encoding?: Encoding) {
-  // return new encoding (if we upgraded) and the
-  // characters after encoding (a string)
+export function encodeBytes(raw: Uint8Array, encoding?: Encoding) {
+  // return new encoding (if we upgraded) and the bytes to be sent
   // - default is Zlib or if compression doesn't help, base32
-  // - returned data can be split, but must be done modX where X provided
 
   encoding = encoding ?? 'Z';
-
-  if (encoding === 'H') {
-    return {
-      encoding,
-      encoded: raw
-        .reduce((acc, byte) => acc + byte.toString(16).padStart(2, '0'), '')
-        .toUpperCase(),
-    };
-  }
 
   if (encoding === 'Z') {
     // trial compression, but skip if it embiggens the data
@@ -182,38 +181,113 @@ export function encodeData(raw: Uint8Array, encoding?: Encoding) {
     if (compressed.length >= raw.length) {
       encoding = '2';
     } else {
-      encoding = 'Z';
       raw = compressed;
     }
   }
 
+  return { encoding, raw };
+}
+
+export function bytesToText(bytes: Uint8Array, encoding: Encoding) {
+  // text for the QR: capital hex, or base32 without padding
+
+  if (encoding === 'H') {
+    return bytes
+      .reduce((acc, byte) => acc + byte.toString(16).padStart(2, '0'), '')
+      .toUpperCase();
+  }
+
+  return base32.encode(bytes).replace(/=*$/, '');
+}
+
+export function encodeData(raw: Uint8Array, encoding?: Encoding) {
+  // return new encoding (if we upgraded) and the
+  // characters after encoding (a string)
+  // - default is Zlib or if compression doesn't help, base32
+  // - returned data can be split, but must be done modX where X provided
+
+  const encoded = encodeBytes(raw, encoding);
+
   return {
-    encoding,
-    // base32 without padding
-    encoded: base32.encode(raw).replace(/=*$/, ''),
+    encoding: encoded.encoding,
+    encoded: bytesToText(encoded.raw, encoded.encoding),
   };
+}
+
+export function textToBytes(part: string, encoding: Encoding) {
+  // undo bytesToText for a single part
+
+  if (encoding === 'H') {
+    // hexToBytes itself is lenient; scanned parts are not to be trusted
+    if (!/^(?:[0-9A-Fa-f]{2})*$/.test(part)) {
+      throw new Error('bad hex');
+    }
+
+    return hexToBytes(part);
+  }
+
+  // base32 decode, but insert padding for API (decoder rejects bad chars and lengths)
+  const padding = (8 - (part.length % 8)) % 8;
+
+  return base32.decode(part + '='.repeat(padding));
+}
+
+export function decodeBytes(bytes: Uint8Array, encoding: Encoding) {
+  // undo the compression, if any
+
+  if (encoding === 'Z') {
+    // one-shot pako.inflate() returns undefined or a prefix on bad input, so stream
+    // it and insist on a complete deflate stream with nothing after it
+    const inflator = new pako.Inflate({ windowBits: -10 });
+    inflator.push(bytes, true);
+
+    // @types/pako leaves these runtime fields undeclared
+    const { ended, strm } = inflator as unknown as { ended: boolean; strm: { avail_in: number } };
+
+    if (inflator.err || !ended || strm.avail_in !== 0) {
+      throw new Error('bad zlib data');
+    }
+
+    return inflator.result as Uint8Array;
+  }
+
+  return bytes;
 }
 
 export function decodeData(parts: string[], encoding: Encoding) {
   // decode the parts back into a Uint8Array
 
-  if (encoding === 'H') {
-    return joinByteParts(parts.map((p) => hexToBytes(p)));
+  return decodeBytes(joinByteParts(parts.map((p) => textToBytes(p, encoding))), encoding);
+}
+
+export function padBlock(block: Uint8Array, size: number) {
+  // pad a data block for parity math: one 0x80 then zeros, up to size bytes
+
+  if (block.length >= size) {
+    throw new Error('no room for padding');
   }
 
-  const bytes = joinByteParts(
-    parts.map((p) => {
-      const padding = (8 - (p.length % 8)) % 8;
+  const rv = new Uint8Array(size);
+  rv.set(block);
+  rv[block.length] = 0x80;
 
-      return base32.decode(p + '='.repeat(padding));
-    })
-  );
+  return rv;
+}
 
-  if (encoding === 'Z') {
-    return pako.inflate(bytes, { windowBits: -10 });
+export function unpadBlock(block: Uint8Array) {
+  // undo padBlock: strip zeros, then exactly one 0x80
+
+  let end = block.length;
+
+  while (end > 0 && block[end - 1] === 0) {
+    end--;
   }
 
-  return bytes;
+  if (end === 0 || block[end - 1] !== 0x80) {
+    throw new Error('bad padding');
+  }
+
+  return block.slice(0, end - 1);
 }
 
 // EOF

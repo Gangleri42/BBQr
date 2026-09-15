@@ -35,6 +35,16 @@ export const ENCODING_SPLIT_MOD = {
   '2': 8,
 } as const;
 
+// Parity parts use the indexes after the data parts, up to this one (GF(2^8) limit)
+export const MAX_PARITY_INDEX = 255;
+
+// Bytes per symbol group: each part must hold whole groups to decode on its own
+export const ENCODING_BYTE_MOD = {
+  H: 1,
+  Z: 5,
+  '2': 5,
+} as const;
+
 // taken from: https://github.com/mnooner256/pyqrcode/blob/674a77b5eaf850d063f518bd90c243ee34ad6b5d/pyqrcode/tables.py#L84
 export const QR_DATA_CAPACITY = {
   1: {

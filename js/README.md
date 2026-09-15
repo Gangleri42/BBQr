@@ -37,6 +37,7 @@ const splitResult = splitQRs(input, fileType, {
   maxSplit: 1295, // maximum number of parts to return
   minVersion: 5, // minimum QR code version
   maxVersion: 40, // maximum QR code version
+  parity: 0, // number of extra parity QR codes to add (see below)
 });
 
 // the QR code version chosen for best efficiency
@@ -55,6 +56,31 @@ const reassembled = joinQRs(splitResult.parts);
 console.log(reassembled.fileType === fileType); // true
 console.log(reassembled.encoding === splitResult.encoding); // true
 console.log(reassembled.raw.every((byte, i) => byte === input[i])); // true
+```
+
+### Parity Parts
+
+Setting `parity` appends that many extra QR codes to the series. Their indexes follow the
+data parts, so a series of 7 data parts with `parity: 2` has parts `00` to `08`, and any 7
+of those 9 are enough to get the data back. The count in the header stays the number of
+data parts. Decoders written before parity parts existed reject the extra indexes, so only
+enable this for receivers known to support it.
+
+Parity has no effect when everything fits into a single QR code.
+
+`joinQRs` accepts any such subset: pass it whatever parts were scanned, in any order, and it
+rebuilds the missing data parts when at least as many parts as the header's count are present.
+
+```js
+// something big enough to need several QR codes
+const big = new Uint8Array(5000);
+crypto.getRandomValues(big);
+
+const { parts } = splitQRs(big, 'B', { encoding: '2', parity: 2 });
+
+// drop any two parts and the data still comes back
+const scanned = parts.slice(2);
+const { raw } = joinQRs(scanned);
 ```
 
 ### Detecting the File Type

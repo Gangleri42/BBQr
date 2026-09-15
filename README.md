@@ -20,7 +20,7 @@ Quick links:
 
 See full spec [BBQr.md](BBQr.md).
 
-File type `M` carries one share of a k-of-n Shamir split; [SHAMIR.md](SHAMIR.md) specifies it. Implementations: [`python/bbqr/shamir.py`](python/bbqr/shamir.py) and the Go module in [`go/`](go/). Cross-implementation test vectors are in [`test_data/shamir_vectors.json`](test_data/shamir_vectors.json).
+File type `M` carries one share of a k-of-n Shamir split; [SHAMIR.md](SHAMIR.md) specifies it. Implementations: [`python/bbqr/shamir.py`](python/bbqr/shamir.py), the Go module in [`go/`](go/), and the browser demo [shaQR](shamir-demo.html), which splits and recovers in the page. Cross-implementation test vectors are in [`test_data/shamir_vectors.json`](test_data/shamir_vectors.json).
 
 # Summary
 

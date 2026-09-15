@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>shaQR</title>
+
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@picocss/pico@2.0.3/css/pico.css"
+      integrity="sha384-eMqr88t8LtEqdsA81XqlcxxMpxUHniTNNCXEEe9lW0356TLykUqw97i/Gxpw1GU2"
+      crossorigin="anonymous"
+    />
+    <script
+      src="https://cdn.jsdelivr.net/npm/bbqr@1.2.0/dist/bbqr.iife.js"
+      integrity="sha384-py0pfboCEsLaalXCe3+epRWqxe3xATD5fChs9v/NVoBMzfy6mB3W9zk6iRMM40ML"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"
+      integrity="sha384-rNlaE5fs9dGIjmxWDALQh/RBAaGRYT5ChrzHo6tRfgrZ36iRFAiquP5g41Jsv+0j"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"
+      integrity="sha384-b5Ya4Bq3qCyz39m2ISh+4DxjAIljdeFwK/BsXLuj9gugaNwAcj/ia15fxNZL9Nlx"
+      crossorigin="anonymous"
+    ></script>
+
+    <style>
+      .hero {
+        width: fit-content;
+        max-width: 100%;
+        margin: 2rem auto 1.5rem auto;
+        padding: 0.75em 1.5em;
+        font-weight: 700;
+        font-size: min(1.4vw, 0.95rem);
+        line-height: 1;
+        overflow-x: auto;
+      }
+      header p {
+        max-width: 40rem;
+      }
+      header nav {
+        font-size: 0.875rem;
+      }
+      section {
+        margin-top: 2rem;
+      }
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .chips button {
+        width: auto;
+        margin: 0;
+        padding: 0.375rem 0.75rem;
+        font-size: 0.875rem;
+      }
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        gap: 1rem 2rem;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--pico-muted-border-color);
+      }
+      .controls > * {
+        margin-bottom: 0;
+      }
+      .controls label {
+        margin-bottom: 0;
+      }
+      .kn {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .kn input {
+        width: 5rem;
+        margin: 0;
+      }
+      .profile .radios {
+        display: flex;
+        gap: 1rem;
+      }
+      .profile .radios label {
+        display: inline-flex;
+        align-items: center;
+        margin: 0;
+      }
+      .profile small {
+        display: block;
+      }
+      .primary {
+        width: auto;
+        margin: 0;
+      }
+      .shares {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1rem;
+      }
+      .shares article {
+        margin: 0;
+      }
+      .shares header {
+        display: flex;
+        flex-direction: column;
+        gap: 0.125rem;
+        margin-bottom: 0.75rem;
+      }
+      .shares img {
+        display: block;
+        width: 100%;
+        max-width: 260px;
+        margin: 0 auto;
+      }
+      .shares details {
+        margin: 0.75rem 0 0 0;
+      }
+      .shares summary,
+      .shares details pre {
+        font-size: 0.8rem;
+      }
+      .shares details pre {
+        white-space: pre-wrap;
+        word-break: break-all;
+        max-height: 9rem;
+        overflow: auto;
+      }
+      .shares footer {
+        display: flex;
+        gap: 1rem;
+        font-size: 0.875rem;
+        margin-top: 0.75rem;
+      }
+      .scan {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1rem;
+      }
+      .scan article {
+        margin: 0;
+      }
+      video {
+        display: block;
+        width: 100%;
+        aspect-ratio: 4 / 3;
+        object-fit: cover;
+        background: #000;
+        border-radius: var(--pico-border-radius);
+      }
+      .held {
+        font-size: 0.875rem;
+      }
+      .held div {
+        display: flex;
+        justify-content: space-between;
+        gap: 0.5rem;
+        padding: 0.4rem 0;
+        border-bottom: 1px solid var(--pico-muted-border-color);
+      }
+      .recovered pre {
+        white-space: pre-wrap;
+        word-break: break-all;
+        max-height: 12rem;
+        overflow: auto;
+        font-size: 0.8rem;
+      }
+      .ok {
+        color: var(--pico-ins-color);
+      }
+      .bad {
+        color: var(--pico-del-color);
+      }
+      .muted {
+        color: var(--pico-muted-color);
+      }
+      .link {
+        background: none;
+        border: none;
+        padding: 0;
+        margin: 0;
+        width: auto;
+        color: var(--pico-primary);
+        text-decoration: underline;
+        font-size: inherit;
+        cursor: pointer;
+      }
+      table td:first-child {
+        color: var(--pico-muted-color);
+        white-space: nowrap;
+      }
+      body.drag-over {
+        outline: 3px dashed var(--pico-primary);
+        outline-offset: -3px;
+      }
+      [hidden] {
+        display: none !important;
+      }
+    </style>
+  </head>
+
+  <body>
+    <main class="container">
+      <header>
+        <pre class="hero" role="img" aria-label="shaQR">
+                  hhhhhh                                     QQQQQQQQQ      RRRRRRRRRRRRRRRRR
+                  h::::h                                   QQ:::::::::QQ    R::::::::::::::::R
+                  h::::h                                 QQ:::::::::::::QQ  R::::::RRRRRR:::::R
+                  h::::h                                Q:::::::QQQ:::::::Q RR:::::R     R:::::R
+    ssssssssss    h::::h hhhhh          aaaaaaaaaaaaa   Q::::::O   Q::::::Q   R::::R     R:::::R
+  ss::::::::::s   h::::hh:::::hhh       a::::::::::::a  Q:::::O     Q:::::Q   R::::R     R:::::R
+ss:::::::::::::s  h::::::::::::::hh     aaaaaaaaa:::::a Q:::::O     Q:::::Q   R::::RRRRRR:::::R
+s::::::ssss:::::s h:::::::hhh::::::h             a::::a Q:::::O     Q:::::Q   R:::::::::::::RR
+ s:::::s  ssssss  h::::::h   h::::::h     aaaaaaa:::::a Q:::::O     Q:::::Q   R::::RRRRRR:::::R
+   s::::::s       h:::::h     h:::::h   aa::::::::::::a Q:::::O     Q:::::Q   R::::R     R:::::R
+      s::::::s    h:::::h     h:::::h  a::::aaaa::::::a Q:::::O  QQQQ:::::Q   R::::R     R:::::R
+ssssss   s:::::s  h:::::h     h:::::h a::::a    a:::::a Q::::::O Q::::::::Q   R::::R     R:::::R
+s:::::ssss::::::s h:::::h     h:::::h a::::a    a:::::a Q:::::::QQ::::::::Q RR:::::R     R:::::R
+s::::::::::::::s  h:::::h     h:::::h a:::::aaaa::::::a  QQ::::::::::::::Q  R::::::R     R:::::R
+ s:::::::::::ss   h:::::h     h:::::h  a::::::::::aa:::a   QQ:::::::::::Q   R::::::R     R:::::R
+  sssssssssss     hhhhhhh     hhhhhhh   aaaaaaaaaa  aaaa     QQQQQQQQ::::QQ RRRRRRRR     RRRRRRR
+                                                                     Q:::::Q
+                                                                      QQQQQQ</pre>
+        <p class="muted">
+          Shamir shares over BBQr. Split any data into n shares that travel as ordinary BBQr
+          series. Any k of them recover it. Fewer than k reveal nothing.
+        </p>
+        <nav>
+          <ul>
+            <li><a href="https://github.com/Gangleri42/BBQr/blob/master/SHAMIR.md">Spec</a></li>
+            <li><a href="https://bbqr.org">BBQr</a></li>
+            <li><a href="https://github.com/Gangleri42/BBQr/tree/master/go">Go</a></li>
+            <li><a href="https://github.com/Gangleri42/BBQr/blob/master/python/bbqr/shamir.py">Python</a></li>
+          </ul>
+        </nav>
+      </header>
+
+      <section id="split">
+        <h2>Split</h2>
+        <article>
+          <textarea id="input" rows="6" placeholder="Paste data, or drop a file anywhere on this page" spellcheck="false"></textarea>
+          <div class="chips">
+            <small class="muted">Load an example</small>
+            <button class="outline secondary" data-example="descriptor">Descriptor</button>
+            <button class="outline secondary" data-example="mnemonic">Mnemonic</button>
+            <button class="outline secondary" data-example="psbt">PSBT</button>
+            <small class="muted" id="detected" style="margin-left: auto"></small>
+          </div>
+          <div class="controls">
+            <div class="kn">
+              <label for="k">Recover with</label>
+              <input type="number" id="k" value="2" min="2" max="255" />
+              <label for="n">of</label>
+              <input type="number" id="n" value="3" min="2" max="255" />
+              <span>shares</span>
+            </div>
+            <div class="profile">
+              <div class="radios" role="radiogroup" aria-label="Generator profile">
+                <label><input type="radio" name="profile" value="randomized" checked /> Randomized</label>
+                <label><input type="radio" name="profile" value="derived" /> Derived</label>
+              </div>
+              <small class="muted">Derived shares reproduce from the data and k. High-entropy data only.</small>
+            </div>
+            <button class="primary" id="split-button">Split</button>
+          </div>
+          <p id="split-error" class="bad" role="alert" hidden></p>
+        </article>
+        <div class="shares" id="shares"></div>
+        <p id="shares-actions" hidden>
+          <button class="outline" id="feed-button" style="width: auto">Feed these shares to Scan back</button>
+        </p>
+        <p class="muted"><small>Each share is its own type M series. Shares are uniformly random: one alone reveals its length, the threshold and a 16-bit tag, nothing else.</small></p>
+      </section>
+
+      <section id="scan">
+        <h2>Scan back</h2>
+        <div class="scan">
+          <article>
+            <video id="video" playsinline muted hidden></video>
+            <div class="chips">
+              <button class="outline" id="camera-button">Start camera</button>
+              <small class="muted" id="scan-status">Point the camera at a share, one share at a time.</small>
+            </div>
+            <label for="paste-parts">
+              <small class="muted">or paste parts, one per line, a blank line between shares</small>
+            </label>
+            <textarea id="paste-parts" rows="3" placeholder="B$2M0100…" spellcheck="false"></textarea>
+            <div class="chips">
+              <button class="outline" id="add-parts-button">Add parts</button>
+              <button class="outline secondary" id="clear-button">Clear</button>
+            </div>
+          </article>
+          <article>
+            <header style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.5rem">
+              <strong id="held-title">No shares yet</strong>
+              <small class="muted" id="held-meta"></small>
+            </header>
+            <div class="held" id="held"></div>
+            <div class="recovered" id="recovered" hidden>
+              <p style="display: flex; justify-content: space-between; align-items: baseline; margin: 1rem 0 0.5rem 0">
+                <strong class="ok">Recovered</strong>
+                <small class="muted" id="recovered-meta"></small>
+              </p>
+              <pre id="recovered-data"></pre>
+              <p id="recovered-note" hidden></p>
+            </div>
+            <p id="scan-error" class="bad" role="alert" hidden></p>
+          </article>
+        </div>
+      </section>
+
+      <section id="why">
+        <h2>Why shares, not fountain codes</h2>
+        <p>
+          UR fountain codes carry one message across a flaky camera link. Shares hand one secret to
+          several holders. Different problem, different math.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th></th>
+              <th>BBQr type M shares</th>
+              <th>UR fountain codes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Purpose</td><td>Threshold secret sharing</td><td>Erasure code for transport</td></tr>
+            <tr><td>Recovers from</td><td>Any k of n shares, in any order</td><td>Enough fragments of one stream</td></tr>
+            <tr><td>Below the threshold</td><td>Nothing, information-theoretically</td><td>Every fragment carries plaintext chunks</td></tr>
+            <tr><td>Holders</td><td>n people or places, one series each</td><td>One receiver watching one screen</td></tr>
+            <tr><td>Integrity</td><td>Sealed digest; corrupt shares are named</td><td>Checksum on the whole message</td></tr>
+            <tr><td>Transport</td><td>Any BBQr encoding; 9 bytes overhead per share</td><td>Is the transport</td></tr>
+          </tbody>
+        </table>
+        <p class="muted"><small>A share has a file type of its own, so a decoder without the extension never shows it as the data.</small></p>
+      </section>
+
+      <section id="spec">
+        <h2>Spec and code</h2>
+        <ul>
+          <li><a href="https://github.com/Gangleri42/BBQr/blob/master/SHAMIR.md">SHAMIR.md</a> <span class="muted">the specification</span></li>
+          <li><a href="https://github.com/Gangleri42/BBQr/tree/master/go">github.com/Gangleri42/BBQr/go</a> <span class="muted">Go module, with a command line tool</span></li>
+          <li><a href="https://github.com/Gangleri42/BBQr/blob/master/python/bbqr/shamir.py">python/bbqr/shamir.py</a> <span class="muted">Python, standard library only</span></li>
+          <li><a href="https://github.com/Gangleri42/BBQr/blob/master/test_data/shamir_vectors.json">test_data/shamir_vectors.json</a> <span class="muted">cross-implementation test vectors</span></li>
+        </ul>
+        <p class="muted"><small>Everything on this page runs in your browser. Nothing leaves it.</small></p>
+      </section>
+
+      <footer>
+        <p class="muted"><small>Public domain, like BBQr.</small></p>
+      </footer>
+    </main>
+
+    <script id="shamir-js">
+      // Shamir shares over BBQr, file type M, as SHAMIR.md specifies.
+      // A port of python/bbqr/shamir.py: splitShares() seals and splits,
+      // combine() recovers and names corrupt shares. pako supplies raw
+      // DEFLATE within the 1 KiB window; WebCrypto supplies SHA-256 and HMAC.
+      const Shamir = (() => {
+        const HEDGE_KEY = 'seedhammer.com/shamir hedge v0';
+        const DERIVED_KEY = 'seedhammer.com/shamir derived v1';
+        const PREFIX_LEN = 4; // tag(2) + index(1) + threshold(1)
+        const DIGEST_LEN = 4;
+        const FLAG_DEFLATED = 0x80; // bit 7 of the sealed type byte
+        const DEFAULT_LIMIT = 1 << 20; // cap on the recovered data size
+        const ATTRIBUTION_CAP = 1024; // k-subsets enumerated to attribute corruption
+
+        class ShareError extends Error {}
+        // No combination of the held shares passes the digest; one more
+        // share lets combine() get past the corrupt one and name it.
+        class Corrupt extends ShareError {}
+        // Two polynomials tie on agreement; one more clean share breaks it.
+        class Ambiguous extends Corrupt {}
+
+        // GF(256), Rijndael polynomial 0x11b, as log and antilog tables.
+        const EXP = new Uint8Array(510);
+        const LOG = new Uint8Array(256);
+        for (let i = 0, x = 1; i < 255; i++) {
+          EXP[i] = EXP[i + 255] = x;
+          LOG[x] = i;
+          x ^= x << 1;
+          if (x & 0x100) x ^= 0x11b;
+        }
+        const mul = (a, b) => (a === 0 || b === 0 ? 0 : EXP[LOG[a] + LOG[b]]);
+        const div = (a, b) => (a === 0 ? 0 : EXP[LOG[a] - LOG[b] + 255]);
+
+        const concat = (...parts) => {
+          const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
+          let off = 0;
+          for (const p of parts) {
+            out.set(p, off);
+            off += p.length;
+          }
+          return out;
+        };
+        const equal = (a, b) => a.length === b.length && a.every((v, i) => v === b[i]);
+        const ascii = (s) => new TextEncoder().encode(s);
+
+        async function digest(k, t, payload) {
+          const h = await crypto.subtle.digest('SHA-256', concat(Uint8Array.of(k, t), payload));
+          return new Uint8Array(h, 0, DIGEST_LEN);
+        }
+
+        async function hmac(key, data) {
+          const k = await crypto.subtle.importKey('raw', key, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+          return new Uint8Array(await crypto.subtle.sign('HMAC', k, data));
+        }
+
+        // HMAC-SHA256 counter mode: prk = HMAC(label, seed), then the
+        // blocks HMAC(prk, u64be(0)), HMAC(prk, u64be(1)), ... cut to length.
+        async function prf(label, seed, length) {
+          const prk = await hmac(ascii(label), seed);
+          const blocks = [];
+          for (let i = 0; i * 32 < length; i++) {
+            const ctr = new Uint8Array(8);
+            new DataView(ctr.buffer).setBigUint64(0, BigInt(i));
+            blocks.push(await hmac(prk, ctr));
+          }
+          return concat(...blocks).subarray(0, length);
+        }
+
+        function deflate(data) {
+          return pako.deflateRaw(data, { windowBits: 10 });
+        }
+
+        function inflate(payload, limit) {
+          const inf = new pako.Inflate({ raw: true, windowBits: 10 });
+          const chunks = [];
+          let total = 0;
+          inf.onData = (chunk) => {
+            total += chunk.length;
+            if (total <= limit) chunks.push(chunk);
+          };
+          inf.push(payload, true);
+          if (total > limit) throw new ShareError(`recovered data exceeds ${limit} bytes`);
+          if (inf.err) throw new ShareError(`payload does not inflate: ${inf.msg}`);
+          if (!inf.ended || inf.strm.avail_in !== 0) {
+            throw new ShareError('payload is not one complete DEFLATE stream');
+          }
+          return concat(...chunks);
+        }
+
+        // Envelopes for x = 1..n. The profile's stream supplies the k-1
+        // coefficients of every sealed byte in ascending degree, then the tag.
+        async function splitSealed(sealed, k, n, { derived = false, rand = null } = {}) {
+          const ncoef = sealed.length * (k - 1);
+          let stream;
+          if (derived) {
+            if (rand) throw new Error('the derived profile takes no random source');
+            stream = await prf(DERIVED_KEY, concat(Uint8Array.of(k), sealed), ncoef + 2);
+          } else {
+            stream = rand ?? crypto.getRandomValues(new Uint8Array(ncoef + 2));
+            if (stream.length !== ncoef + 2) {
+              throw new Error(`random stream of ${stream.length} bytes, the split consumes ${ncoef + 2}`);
+            }
+            // hedge the coefficients against a failed source; the tag stays raw
+            const hedge = await prf(HEDGE_KEY, sealed, ncoef);
+            stream = stream.slice();
+            for (let i = 0; i < ncoef; i++) stream[i] ^= hedge[i];
+          }
+          const tag = stream.subarray(ncoef, ncoef + 2);
+          const envelopes = [];
+          for (let x = 1; x <= n; x++) {
+            const y = new Uint8Array(sealed.length);
+            for (let i = 0; i < sealed.length; i++) {
+              // Horner evaluation of s + c1 X + ... + c[k-1] X^(k-1) at x
+              let v = 0;
+              for (let j = k - 2; j >= 0; j--) v = mul(v, x) ^ stream[i * (k - 1) + j];
+              y[i] = mul(v, x) ^ sealed[i];
+            }
+            envelopes.push(concat(tag, Uint8Array.of(x, k), y));
+          }
+          return envelopes;
+        }
+
+        // Split data of the given BBQr file type into n share envelopes, any
+        // k of which recover it. The data is compressed when that shrinks it,
+        // sealed with its type and a digest, then split.
+        async function splitShares(data, fileType, k, n, { derived = false, rand = null } = {}) {
+          if (typeof data === 'string') data = new TextEncoder().encode(data);
+          if (!/^[A-Z]$/.test(fileType)) throw new Error(`invalid file type ${fileType}`);
+          if (data.length === 0) throw new Error('nothing to split');
+          if (!(2 <= k && k <= n && n <= 255)) throw new Error(`invalid threshold ${k} of ${n}`);
+
+          let t = fileType.charCodeAt(0);
+          let payload = data;
+          const z = deflate(data);
+          if (z.length < data.length) {
+            t |= FLAG_DEFLATED;
+            payload = z;
+          }
+          const sealed = concat(Uint8Array.of(t), payload, await digest(k, t, payload));
+          const envelopes = await splitSealed(sealed, k, n, { derived, rand });
+
+          // A generator verifies a split before committing it to its medium:
+          // recover from subsets covering every share.
+          for (let start = 0; start < n; start += k) {
+            const held = [];
+            for (let i = 0; i < k; i++) held.push(envelopes[(start + i) % n]);
+            const r = await combine(held, data.length);
+            if (r.fileType !== fileType || !equal(r.data, data) || r.corrupt.length) {
+              throw new ShareError('split does not recover');
+            }
+          }
+          return envelopes;
+        }
+
+        // Parse one share envelope, the payload of a complete type M BBQr
+        // series. The envelope does not self-identify: dispatch on the
+        // series file type.
+        function parseEnvelope(env) {
+          if (env.length < PREFIX_LEN + 1 + DIGEST_LEN + 1) throw new ShareError('share too short');
+          const tag = (env[0] << 8) | env[1];
+          const index = env[2];
+          const k = env[3];
+          if (k < 2) throw new ShareError(`invalid threshold ${k}`);
+          if (index < 1) throw new ShareError('invalid share index 0');
+          return { tag, index, k, y: env.subarray(PREFIX_LEN) };
+        }
+
+        // Evaluate at x, byte by byte, the polynomial through the (index, y)
+        // points. x = 0 is the sealed content.
+        function interpolate(points, x) {
+          const out = new Uint8Array(points[0][1].length);
+          for (const [xi, yi] of points) {
+            let w = 1;
+            for (const [xm] of points) {
+              if (xm !== xi) w = div(mul(w, x ^ xm), xi ^ xm);
+            }
+            if (w) for (let j = 0; j < yi.length; j++) out[j] ^= mul(w, yi[j]);
+          }
+          return out;
+        }
+
+        // Combine the shares at positions idx, verify the digest and unseal
+        // the content. Corrupt on the digest; ShareError for content no
+        // other combination cures.
+        async function read(shares, k, idx, limit) {
+          const points = idx.map((i) => shares[i]);
+          const sealed = interpolate(points, 0);
+          const t = sealed[0];
+          const payload = sealed.subarray(1, sealed.length - DIGEST_LEN);
+          if (!equal(sealed.subarray(sealed.length - DIGEST_LEN), await digest(k, t, payload))) {
+            throw new Corrupt('digest mismatch');
+          }
+          const fileType = String.fromCharCode(t & 0x7f);
+          if (!/^[A-Z]$/.test(fileType)) throw new ShareError(`invalid recovered file type ${fileType}`);
+          // the digest covers the compressed payload: only verified content is inflated
+          const data = t & FLAG_DEFLATED ? inflate(payload, limit) : payload;
+          const agree = shares.map(([x, y], i) => idx.includes(i) || equal(interpolate(points, x), y));
+          return { fileType, data, agree };
+        }
+
+        // the reading's content with every held share off its polynomial named
+        function recovered(shares, r) {
+          const corrupt = shares.filter((_, i) => !r.agree[i]).map(([x]) => x);
+          corrupt.sort((a, b) => a - b);
+          return { fileType: r.fileType, data: r.data, corrupt };
+        }
+
+        const count = (r) => r.agree.filter(Boolean).length;
+
+        // Lexicographic k-subsets of 0..n-1.
+        function* combinations(n, k) {
+          const idx = Array.from({ length: k }, (_, i) => i);
+          while (true) {
+            yield idx.slice();
+            let i = k - 1;
+            while (i >= 0 && idx[i] === n - k + i) i--;
+            if (i < 0) return;
+            idx[i]++;
+            for (let j = i + 1; j < k; j++) idx[j] = idx[j - 1] + 1;
+          }
+        }
+
+        // C(n, k) <= limit, without overflow.
+        function subsetsWithin(n, k, limit) {
+          if (k > n - k) k = n - k;
+          let c = 1;
+          for (let i = 1; i <= k; i++) {
+            c = (c * (n - k + i)) / i;
+            if (c > limit) return false;
+          }
+          return true;
+        }
+
+        // Enumerate the k-subsets after the first; a subset inside a known
+        // reading's agreement set reads the same polynomial and is skipped.
+        // The reading most held shares agree with wins; a tie is Ambiguous.
+        async function attribute(shares, k, readings, limit) {
+          let first = true;
+          for (const idx of combinations(shares.length, k)) {
+            if (first) {
+              first = false;
+              continue;
+            }
+            if (readings.some((r) => idx.every((i) => r.agree[i]))) continue;
+            try {
+              readings.push(await read(shares, k, idx, limit));
+            } catch (e) {
+              if (!(e instanceof Corrupt)) throw e;
+            }
+          }
+          if (!readings.length) throw new Corrupt('no combination of the held shares verifies');
+          const counts = readings.map(count).sort((a, b) => b - a);
+          if (counts.length > 1 && counts[0] === counts[1]) {
+            throw new Ambiguous('verifying combinations tie on agreement');
+          }
+          return recovered(shares, readings.reduce((a, b) => (count(b) > count(a) ? b : a)));
+        }
+
+        // A reading found past the enumeration cap that at most half the
+        // held shares agree with may be a cancelling pair of corrupt members
+        // outvoting the clean shares: read one combination of its dissenters.
+        async function outvote(shares, k, r, limit) {
+          const n = count(r);
+          const dissent = r.agree.map((ok, i) => (ok ? -1 : i)).filter((i) => i >= 0);
+          if (2 * n > shares.length || dissent.length < k) return recovered(shares, r);
+          let alt;
+          try {
+            alt = await read(shares, k, dissent.slice(0, k), limit);
+          } catch (e) {
+            if (e instanceof Corrupt) return recovered(shares, r);
+            throw e;
+          }
+          if (count(alt) === n) throw new Ambiguous('verifying combinations tie on agreement');
+          return recovered(shares, count(alt) > n ? alt : r);
+        }
+
+        // Recover {fileType, data, corrupt} from the share envelopes of one
+        // split, in any order. corrupt lists the index of every held share
+        // whose bytes lie off the recovered polynomial, ascending.
+        async function combine(envelopes, limit = DEFAULT_LIMIT) {
+          if (!envelopes.length) throw new ShareError('no shares');
+          const first = parseEnvelope(envelopes[0]);
+          const { tag, k } = first;
+          const shares = []; // [index, y values], in collection order
+          for (const env of envelopes) {
+            const e = parseEnvelope(env);
+            if (e.tag !== tag || e.k !== k || e.y.length !== first.y.length) {
+              throw new ShareError('shares disagree on tag, threshold or length');
+            }
+            const prev = shares.find(([x]) => x === e.index);
+            if (prev) {
+              if (!equal(prev[1], e.y)) throw new ShareError(`conflicting copies of share ${e.index}`);
+              continue;
+            }
+            shares.push([e.index, e.y]);
+          }
+          const held = shares.length;
+          if (held < k) throw new ShareError(`${held} of ${k} shares`);
+
+          const firstIdx = Array.from({ length: k }, (_, i) => i);
+          let r = null;
+          try {
+            r = await read(shares, k, firstIdx, limit);
+          } catch (e) {
+            if (!(e instanceof Corrupt)) throw e;
+          }
+          if (r && r.agree.every(Boolean)) return recovered(shares, r);
+          if (subsetsWithin(held, k, ATTRIBUTION_CAP)) return attribute(shares, k, r ? [r] : [], limit);
+          if (r) return outvote(shares, k, r, limit);
+          // With c corrupt shares among the first k, a single swap finds a
+          // clean combination when c == 1, and one of the first c+1 windows
+          // is clean whenever held >= (c+1)*k.
+          const candidates = [];
+          for (let j = 0; j < k; j++) {
+            for (let spare = k; spare < held; spare++) {
+              const idx = firstIdx.slice();
+              idx[j] = spare;
+              candidates.push(idx);
+            }
+          }
+          for (let start = k; start + k <= held; start += k) {
+            candidates.push(Array.from({ length: k }, (_, i) => start + i));
+          }
+          for (const idx of candidates) {
+            try {
+              r = await read(shares, k, idx, limit);
+            } catch (e) {
+              if (e instanceof Corrupt) continue;
+              throw e;
+            }
+            return outvote(shares, k, r, limit);
+          }
+          throw new Corrupt('no combination of the held shares verifies');
+        }
+
+        return { splitShares, splitSealed, combine, parseEnvelope, digest, ShareError, Corrupt, Ambiguous, DEFAULT_LIMIT };
+      })();
+    </script>
+
+    <script>
+      // Page wiring: split, render, scan back.
+      const $ = (id) => document.getElementById(id);
+      const TYPE_NAMES = { P: 'PSBT', T: 'Transaction', J: 'JSON', C: 'CBOR', U: 'Text', B: 'Binary', X: 'Executable', M: 'Shamir share' };
+
+      const EXAMPLES = {
+        descriptor: "wsh(sortedmulti(2,[c20d0c81/48h/0h/0h/2h]xpub6Dyvg74MADonsv1hPvMFKNtHPyvuSZ3mc8c7A6CLhD21ef6qSfbqgqWHFfjtV8H7Vz9YSKdeXq6n2NkvE5GapUmZJnsvn5p1pfQwV6aTmXd/<0;1>/*,[9a6a2580/48h/0h/0h/2h]xpub6EeqK2JLwngrHJEQ4X4iqrySZV9qU3TgwMgf6NStLZa37AfNiHTtTE9ji1F9YQDLArJMLy8sw3Q2samVj5VQQjaaUHr5z2Hz57NWHJCfh31/<0;1>/*,[2a77e0a6/48h/0h/0h/2h]xpub6F8WgTkiV8iDPFG1Kv4sNrcBNMMgKK4cjfxjdZWvR3kChfbt3L2dJF7xmCHBMGMmxjyzwgjdFkh9UN3623YpsmqN1KwZGR45Y3ANLQQX87u/<0;1>/*))",
+        mnemonic: 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about',
+        psbt: "cHNidP8BAMkCAAAAAw0LFe2nYZVhWGRFccsyZ1kWzineRsUq2xM/gJAqfHvYAAAAAAD/////T3KwcSU2a3qn8J9opvAs61NbbruFTmebo4ZCgIJ/sukAAAAAAP////939XUhgWBqk1icrzcEAFQmsv6hKPx9tlzuQi23gby5FwAAAAAA/////wKMz/AIAAAAABl2qRTsAZMBxEueuw2aJIjg8T6WUlNfLIisjM/wCAAAAAAZdqkU2HPa6z2Y7ajbpVoE6X4P6H4wpZiIrAAAAAAAAQBVAgAAAAGt3gAAAAAAAO++AAAAAAAAAAAAAAAAAAAAAAAAAAAAAEkAAAAA/////wEA4fUFAAAAABl2qRQLJTen1vPMZoyen6AwP/s8rW6bgYisAAAAACIGAyvjcoAdhGDdpSrheKrXdKVIALpW+UnJe4ovUeKZIJ0GDA8FaUMAAAAAAAAAAAABAFUCAAAAAa3eAAAAAAAA774AAAAAAAAAAAAAAAAAAAAAAAAAAAAASQAAAAD/////AQDh9QUAAAAAGXapFIKLdGycxuL7uJOU9U/0Dv/SpLZRiKwAAAAAIgYC2SKQO46ylbsjL8AwTYjPF1WmAXkVb6j4SXDw1ActX7sMDwVpQwAAAAABAAAAAAEAVQIAAAABrd4AAAAAAADvvgAAAAAAAAAAAAAAAAAAAAAAAAAAAABJAAAAAP////8BAOH1BQAAAAAZdqkUEYjZdEwP6Oj67HctDEgb+BQA+QmIrAAAAAAiBgIftCPUJRLknXWp0nQVBHp0N4JDz3ruB8G2m6faCgPUKAwPBWlDAAAAAAIAAAAAACICAvLUgjZaHo6bv8yDAUEEjplJ+O+66bnba7+r2FSYtfZHEA8FaUMMAAAAIgAAAGADAAAA",
+      };
+
+      let input = null; // { fileType, raw }
+      let inputRun = 0; // only the latest setInput() lands
+      let shares = []; // { envelope, corrupt, parts, version, url }
+
+      function showError(id, err) {
+        const el = $(id);
+        el.textContent = err ? String(err.message ?? err) : '';
+        el.hidden = !err;
+      }
+
+      async function setInput(value) {
+        const run = ++inputRun;
+        showError('split-error', null);
+        let detected;
+        try {
+          detected = await BBQr.detectFileType(value);
+        } catch (err) {
+          if (run !== inputRun) return;
+          input = null;
+          $('detected').textContent = '';
+          showError('split-error', err);
+          return;
+        }
+        if (run !== inputRun) return;
+        input = detected;
+        const z = pako.deflateRaw(input.raw, { windowBits: 10 });
+        const size = z.length < input.raw.length ? `compresses to ${z.length} bytes` : 'does not compress';
+        $('detected').textContent = `Type ${input.fileType} · ${input.raw.length} bytes · ${size}`;
+      }
+
+      $('input').addEventListener('input', (e) => {
+        if (e.target.value.trim()) setInput(e.target.value);
+      });
+
+      for (const button of document.querySelectorAll('[data-example]')) {
+        button.addEventListener('click', () => {
+          $('input').value = EXAMPLES[button.dataset.example];
+          setInput($('input').value);
+        });
+      }
+
+      document.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        document.body.classList.add('drag-over');
+      });
+      document.addEventListener('dragleave', (e) => {
+        if (!e.relatedTarget) document.body.classList.remove('drag-over');
+      });
+      document.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        document.body.classList.remove('drag-over');
+        const file = e.dataTransfer?.files?.[0];
+        if (!file) return;
+        $('input').value = `${file.name} (${file.size} bytes)`;
+        await setInput(file);
+      });
+
+      function clearShares() {
+        for (const s of shares) URL.revokeObjectURL(s.url);
+        shares = [];
+        $('shares').innerHTML = '';
+        $('shares-actions').hidden = true;
+      }
+
+      async function renderShare(s, i) {
+        const { parts, version } = BBQr.splitQRs(s.envelope, 'M', { encoding: '2' });
+        const png = await BBQr.renderQRImage(parts, version, { scale: 3 });
+        if (s.url) URL.revokeObjectURL(s.url);
+        Object.assign(s, { parts, version, url: URL.createObjectURL(new Blob([png], { type: 'image/png' })) });
+
+        const card = document.createElement('article');
+        card.innerHTML = `
+          <header>
+            <strong>Share ${i + 1} of ${shares.length}</strong>
+            <small class="muted">${parts.length} ${parts.length === 1 ? 'part' : 'parts'} · QR version ${version}</small>
+          </header>
+          <img alt="Share ${i + 1}" />
+          <details><summary>Parts</summary><pre></pre></details>
+          <footer>
+            <a download="share-${i + 1}.png">Save PNG</a>
+            <button class="link corrupt-button"></button>
+          </footer>`;
+        card.querySelector('img').src = s.url;
+        card.querySelector('a').href = s.url;
+        card.querySelector('pre').textContent = parts.join('\n');
+        const flip = card.querySelector('.corrupt-button');
+        flip.textContent = s.corrupt ? 'Restore this share' : 'Corrupt this share';
+        if (s.corrupt) card.querySelector('header strong').insertAdjacentHTML('beforeend', ' <span class="bad">corrupt</span>');
+        flip.addEventListener('click', async () => {
+          s.corrupt = !s.corrupt;
+          s.envelope = s.envelope.slice();
+          s.envelope[s.envelope.length - 1] ^= 0xff;
+          const fresh = await renderShare(s, i);
+          card.replaceWith(fresh);
+        });
+        return card;
+      }
+
+      $('split-button').addEventListener('click', async () => {
+        showError('split-error', null);
+        if (!input && $('input').value.trim()) await setInput($('input').value);
+        if (!input) return showError('split-error', new Error('Paste some data or load an example first.'));
+        const k = Number($('k').value);
+        const n = Number($('n').value);
+        const derived = document.querySelector('input[name=profile]:checked').value === 'derived';
+        const button = $('split-button');
+        button.setAttribute('aria-busy', 'true');
+        $('shares-actions').hidden = true; // no feeding half-rendered shares
+        try {
+          const envelopes = await Shamir.splitShares(input.raw, input.fileType, k, n, { derived });
+          clearShares();
+          shares = envelopes.map((envelope) => ({ envelope, corrupt: false }));
+          for (let i = 0; i < shares.length; i++) $('shares').append(await renderShare(shares[i], i));
+          $('shares-actions').hidden = false;
+        } catch (err) {
+          showError('split-error', err);
+        } finally {
+          button.removeAttribute('aria-busy');
+        }
+      });
+
+      // Feeding starts a fresh set: every split has its own tag, so shares
+      // of an earlier split would be rejected as foreign.
+      $('feed-button').addEventListener('click', () => {
+        resetScan();
+        for (const s of shares) for (const p of s.parts ?? []) feed(p);
+        $('scan').scrollIntoView({ behavior: 'smooth' });
+      });
+
+      // Scan back: collect one share's parts at a time, then the share.
+      let series = null; // { key, total, parts: Map }
+      let held = []; // { envelope, index, k, tag, parts }
+      let need = 0;
+      let recoverRun = 0; // only the latest recover() reports
+
+      function status(text, bad = false) {
+        const el = $('scan-status');
+        el.textContent = text;
+        el.className = bad ? 'bad' : 'muted';
+      }
+
+      function feed(text) {
+        text = text.trim();
+        if (!text) return;
+        if (!text.startsWith('B$') || text.length < 8) return status('Not a BBQr part.', true);
+        if (text[3] !== 'M') return status(`That is a type ${text[3]} series, not a share.`, true);
+        const key = text.slice(0, 6);
+        const total = parseInt(text.slice(4, 6), 36);
+        const idx = parseInt(text.slice(6, 8), 36);
+        if (series && (series.key !== key || (series.parts.has(idx) && series.parts.get(idx) !== text))) {
+          series = null; // a part of another share: start over
+        }
+        series ??= { key, total, parts: new Map() };
+        series.parts.set(idx, text);
+        if (series.parts.size < total) {
+          return status(`Collecting a share: ${series.parts.size} of ${total} parts.`);
+        }
+        const parts = [...series.parts.values()];
+        series = null;
+        let envelope;
+        try {
+          envelope = BBQr.joinQRs(parts).raw;
+        } catch (err) {
+          return status(err.message, true);
+        }
+        addHeld(envelope, parts);
+      }
+
+      function addHeld(envelope, parts) {
+        showError('scan-error', null);
+        let sh;
+        try {
+          sh = Shamir.parseEnvelope(envelope);
+        } catch (err) {
+          return status(err.message, true);
+        }
+        if (held.length && (sh.tag !== held[0].tag || sh.k !== held[0].k || envelope.length !== held[0].envelope.length)) {
+          return status(`Share ${sh.index} belongs to a different split. Clear to start over.`, true);
+        }
+        const prev = held.find((h) => h.index === sh.index);
+        if (prev) {
+          const same = prev.envelope.length === envelope.length && prev.envelope.every((v, i) => v === envelope[i]);
+          return status(same ? `Share ${sh.index} is already held.` : `Another share ${sh.index} with different content; ignored.`, !same);
+        }
+        held.push({ envelope, index: sh.index, k: sh.k, tag: sh.tag, parts });
+        need = sh.k;
+        status(`Share ${sh.index} added.`);
+        renderHeld();
+        if (held.length >= need) recover();
+      }
+
+      function renderHeld() {
+        $('held-title').textContent = held.length ? `Holding ${held.length} ${held.length === 1 ? 'share' : 'shares'}` : 'No shares yet';
+        $('held-meta').textContent = held.length ? `${need} needed · tag ${held[0].tag.toString(16).padStart(4, '0')}` : '';
+        $('held').innerHTML = '';
+        for (const h of held) {
+          const row = document.createElement('div');
+          row.innerHTML = `<span>Share ${h.index}</span><span class="muted">${h.parts.length} ${h.parts.length === 1 ? 'part' : 'parts'}</span><span data-index="${h.index}"></span>`;
+          $('held').append(row);
+        }
+      }
+
+      function markShares(corrupt) {
+        for (const cell of $('held').querySelectorAll('[data-index]')) {
+          const bad = corrupt.includes(Number(cell.dataset.index));
+          cell.className = bad ? 'bad' : 'ok';
+          cell.textContent = bad ? 'corrupt' : '✓';
+        }
+      }
+
+      function showData(fileType, data) {
+        if (fileType === 'U' || fileType === 'J') return new TextDecoder().decode(data);
+        if (fileType === 'P') return btoa(String.fromCharCode(...data));
+        return [...data].map((b) => b.toString(16).padStart(2, '0')).join('');
+      }
+
+      async function recover() {
+        const run = ++recoverRun;
+        $('recovered').hidden = true;
+        showError('scan-error', null);
+        try {
+          const r = await Shamir.combine(held.map((h) => h.envelope));
+          if (run !== recoverRun) return;
+          markShares(r.corrupt);
+          $('recovered-meta').textContent = `type ${r.fileType} ${TYPE_NAMES[r.fileType] ?? ''} · ${r.data.length} bytes`;
+          const text = showData(r.fileType, r.data);
+          $('recovered-data').textContent = text.length > 4096 ? text.slice(0, 4096) + '…' : text;
+          const note = $('recovered-note');
+          if (r.corrupt.length) {
+            const list = r.corrupt.join(', ');
+            note.className = 'bad';
+            note.textContent =
+              r.corrupt.length === 1
+                ? `Share ${list} is corrupt. Recovered from the others; re-make it while the quorum is present.`
+                : `Shares ${list} are corrupt. Recovered from the others; re-make them while the quorum is present.`;
+          }
+          note.hidden = !r.corrupt.length;
+          $('recovered').hidden = false;
+        } catch (err) {
+          if (run !== recoverRun) return;
+          if (err instanceof Shamir.Ambiguous) {
+            showError('scan-error', new Error('Two readings of these shares verify with equal support. Add one more share to tell the corrupt ones apart.'));
+          } else if (err instanceof Shamir.Corrupt) {
+            showError('scan-error', new Error('No combination of these shares verifies. A share is corrupt; add another one.'));
+          } else {
+            showError('scan-error', err);
+          }
+        }
+      }
+
+      $('add-parts-button').addEventListener('click', () => {
+        const groups = $('paste-parts').value.split(/\n\s*\n/);
+        for (const group of groups) {
+          series = null;
+          for (const line of group.split('\n')) feed(line);
+        }
+        $('paste-parts').value = '';
+      });
+
+      function resetScan() {
+        series = null;
+        held = [];
+        need = 0;
+        recoverRun++;
+        renderHeld();
+        $('recovered').hidden = true;
+        showError('scan-error', null);
+        status('Point the camera at a share, one share at a time.');
+      }
+
+      $('clear-button').addEventListener('click', resetScan);
+
+      // Camera: decode frames with jsQR and feed every new part.
+      let stream = null;
+      let lastText = '';
+      let lastAt = 0;
+
+      async function startCamera() {
+        const video = $('video');
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        } catch (err) {
+          return status(`Camera unavailable: ${err.message}`, true);
+        }
+        video.srcObject = stream;
+        video.hidden = false;
+        await video.play();
+        $('camera-button').textContent = 'Stop camera';
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        const tick = () => {
+          if (!stream) return;
+          if (video.readyState >= 2) {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0);
+            const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(frame.data, frame.width, frame.height, { inversionAttempts: 'dontInvert' });
+            const now = performance.now();
+            if (code && (code.data !== lastText || now - lastAt > 1500)) {
+              lastText = code.data;
+              lastAt = now;
+              feed(code.data);
+            }
+          }
+          requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      }
+
+      function stopCamera() {
+        for (const t of stream?.getTracks() ?? []) t.stop();
+        stream = null;
+        $('video').srcObject = null;
+        $('video').hidden = true;
+        $('camera-button').textContent = 'Start camera';
+      }
+
+      $('camera-button').addEventListener('click', () => (stream ? stopCamera() : startCamera()));
+    </script>
+  </body>
+</html>

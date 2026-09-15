@@ -55,7 +55,7 @@ This seven-character header must be added inside the start of each QR:
 B$                  fixed header for this protocol (2 chars)
 H                   one char of data encoding: H=Hex
 P                   one char file type: P=PSBT, T=TXN, etc
-05                  Two digits of base 36: total number of QR codes (0-9A-Z)
+05                  Two digits of base 36: number of QR codes needed to decode (0-9A-Z)
 00                  Two digits of base 36: which QR code this is in the sequence
 (HEX or Base32 characters follow)
 ```
@@ -171,7 +171,8 @@ data transfered per QR, if HEX encoding is used.
 - This protocol produces QR codes that are text and have no spaces, so they
   are easy to "cut n paste" as a single block.
 - All "N" QR codes must be scanned, there is no way to "skip" one, but they do not
-  have to be seen in any particular order.
+  have to be seen in any particular order. Senders can add parity parts so that any
+  N of a longer series are enough, see [Parity Parts](#parity-parts) below.
 - Since a version 40 QR holds 4296 characters and we support up to
   1295 (`ZZ` in base 36) parts, the largest possible (uncompressed)
   file is 2,776,480 for HEX, and 3,470,600 for Base32 encoding.
@@ -288,6 +289,139 @@ finalized-by-ckcc.txn   |   1932 | 807   |  58.2%
 last.txn                |    553 | 530   |  4.2%
 nfc-result.txn          |    376 | 362   |  3.7%
 signed.txn              | 100757 | 77090 |  23.5%
+
+## Parity Parts
+
+An animated series is done only when every part has been seen. A camera
+that misses one frame waits for the whole loop to come around again.
+Parity parts fix that. The sender adds a few extra QR codes to the
+series, and the receiver is done as soon as it has seen *any* N of them,
+where N is the count in the header.
+
+Nothing in the header changes. The count field still says how many parts
+are needed. Parity parts use the indexes after the data parts: in a
+series of 5, data is `00` to `04` and parity is `05` and up. Encoding
+letter, file type and count are the same on every part, as always.
+
+The data parts are a normal series, so a receiver that knows nothing
+about parity could complete from them alone. In practice it will not:
+receivers written before this section, the reference implementations
+included, reject any index at or past the count, and in an animated
+loop a parity part is scanned sooner or later. Such receivers fail
+loudly on that part and never produce wrong data, but they do fail.
+Only add parity parts for receivers known to handle them.
+
+### Rules
+
+- Parity is possible only for series of 2 or more data parts. The last
+  usable index is 255 (`73` in base 36) because the field used below has
+  256 elements. A sender may add as many parity parts as fit in that range.
+- Data parts are exactly as described above: equal length except for the
+  last one, and each decoding to whole bytes.
+- Every parity part is one symbol group longer than a full data part:
+  1 byte (2 characters) for HEX, 5 bytes (8 characters) for Base32.
+  Senders must leave room for that when choosing the QR version.
+- All parity parts in a series have the same length.
+
+### Block Padding
+
+The arithmetic below works on blocks of equal length. Let B be the
+number of bytes in a full data part, after undoing the HEX or Base32.
+Every data block, including full ones, is padded to B+1 bytes (HEX) or
+B+5 bytes (Base32) by appending one `0x80` byte and then `0x00` bytes as
+needed. Parity blocks have that padded length.
+
+This padding is why parity parts are a group longer. When the last data
+part has been lost and is rebuilt, the receiver finds the end of the
+real data by stripping trailing zeros and then the `0x80`. Because the
+rule is the same for every block, a full last part causes no ambiguity.
+
+Padding exists only for the arithmetic. Data parts are sent without it.
+
+### Arithmetic
+
+Bytes are elements of GF(2^8) with reduction polynomial
+x^8 + x^4 + x^3 + x^2 + 1 (`0x11D`) and generator 2. This is the field
+QR codes use internally for their own error correction. Addition is XOR.
+
+Consider one byte position p across the N padded data blocks. The values
+D_0[p] .. D_(N-1)[p] define a unique polynomial f_p of degree below N
+with f_p(i) = D_i[p]. Parity block j (j from N up to 255) holds
+P_j[p] = f_p(j). Block i, data or parity, is the value of f_p at x = i.
+
+Any N blocks with distinct indexes determine f_p. To rebuild a missing
+data block m from received blocks Y_1 .. Y_N with indexes x_1 .. x_N:
+
+```
+f_p(m) = XOR over i of   w_i * Y_i[p]
+
+w_i    = product over j != i of   (m + x_j) / (x_i + x_j)
+```
+
+Here `+` is XOR, `*` and `/` are field multiplication and division. The
+weights w_i depend only on the indexes, so compute them once per missing
+block and apply them to every byte position. When all N data parts have
+been received there is no arithmetic at all.
+
+This is systematic Reed-Solomon erasure coding, the same construction
+found in storage libraries. An embedded receiver needs a 512-byte
+log/antilog table, XOR, and buffer space for N blocks plus a few weights.
+Rebuilding a block is one pass over the received blocks.
+
+### Worked Example
+
+Five bytes `01 02 03 04 05`, HEX encoded, sent as 3 data parts of 2 bytes
+plus 2 parity parts.
+
+```
+B$HB03000102
+B$HB03010304
+B$HB030205
+```
+
+A full data part holds 2 bytes, so blocks are padded to 3 bytes:
+
+```
+D0 = 01 02 80
+D1 = 03 04 80
+D2 = 05 80 00
+```
+
+For x = 3 the weights are (1, 1, 1), so P3 is simply the XOR of the
+three blocks: `07 86 00`. For x = 4 the weights are (15, 8, 6). Byte 0
+of P4 is 15*1 XOR 8*3 XOR 6*5 = 15 XOR 24 XOR 30 = 9, and the whole block
+is `09 19 A7`.
+
+```
+B$HB0303078600
+B$HB03040919A7
+```
+
+Any 3 of the 5 parts recover the data. If `B$HB030205` was lost and P3
+is in hand: D2 = D0 XOR D1 XOR P3 = `05 80 00`. Strip the zeros and the
+`0x80`, leaving `05`.
+
+### Notes for Receivers
+
+- Only as many parity parts as there are missing data parts are needed.
+  Use the lowest parity indexes you hold and ignore the rest, so one
+  damaged surplus part cannot block a decode that has enough good ones.
+- After rebuilding a part, check its length: a full part must be exactly
+  B bytes and the last part between 1 and B. Reject the series otherwise.
+- The header cannot tell two series apart when they share encoding, file
+  type and count. That was always true of data parts; with parity parts a
+  stale frame from an earlier transfer can also poison a rebuild. Discard
+  everything collected when a new scan starts.
+- Treat scanned text as untrusted: check that the count and index are two
+  capital base 36 digits, that every part has a body, and that the body
+  decodes cleanly, before doing any arithmetic.
+
+### Choosing a Parity Count
+
+Two or three parity parts cover most scanning conditions, at the cost of
+that many extra frames in the loop. The reference implementations take a
+`parity` count when splitting and need no option when joining.
+
 
 # Coldcard Q Suggestions
 

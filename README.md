@@ -60,6 +60,13 @@ possible QR codes.
 The largest possible (uncompressed) data payload in 3,470,600 bytes
 spread across in 1,295 version 40 QR codes.
 
+A sender can add parity QR codes to a series. The receiver then needs
+any N of them, where N is the count in the header, so one missed frame
+no longer means waiting for the whole loop. The header does not change
+and the data parts are the normal series, but receivers must know about
+parity parts: older ones reject the extra indexes. See
+[Parity Parts](BBQr.md#parity-parts) in the spec.
+
 # Example Image
 
 ![Example of BBQr Image](example.png)
@@ -108,6 +115,7 @@ released public implementation was not available for this verification pass.
 - Splitting QRs: [Python](python/bbqr/split.py), [JS](js/src/split.ts)
 - Joining QRs: [Python](python/bbqr/join.py), [JS](js/src/join.ts)
 - Binary to internal encoding: [Python](python/bbqr/utils.py), [JS](js/src/utils.ts)
+- Parity parts, GF(2^8) arithmetic: [Python](python/bbqr/gf256.py), [JS](js/src/gf256.ts)
 - Wrapper CLI: [Python](python/bbqr/cli.py)
 - [Example of using the JS implementation](https://bbqr.org/js-demo)
 
@@ -131,6 +139,9 @@ A single QR version 35 will be needed.
 
 % psbt_faker -n 200 - | bbqr make - -t P -r | pbcopy
 Need 5 QR's each of version 37.
+% bbqr make test_data/1in100out.psbt -p 2 -v 27 | pbcopy
+Detected file type: P -> PSBT
+Need 5 QR's each of version 22: 3 data + 2 parity, any 3 recover the data.
 ```
 
 These are round-trip examples, where encode and decode are performed.

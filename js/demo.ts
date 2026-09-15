@@ -4,6 +4,10 @@ import { detectFileType, renderQRImage, splitQRs } from './src/main';
 
 const resultEl = document.querySelector<HTMLDivElement>('#result')!;
 const inputEl = document.querySelector<HTMLTextAreaElement>('#text-input')!;
+const parityEl = document.querySelector<HTMLInputElement>('#parity')!;
+
+// remembered so a change to the parity count can redo the last split
+let lastInput: File | string | undefined;
 
 function clearPrevious() {
   const existingImgs = resultEl.querySelectorAll('img');
@@ -24,6 +28,7 @@ async function handleFileOrTextInput(input: File | string) {
   }
 
   busy = true;
+  lastInput = input;
 
   try {
     clearPrevious();
@@ -34,12 +39,20 @@ async function handleFileOrTextInput(input: File | string) {
 
     resultMsg += `Detected file type: <strong>${fileType}</strong><br>`;
 
-    const { parts, version } = splitQRs(raw, fileType, { encoding: 'Z' });
+    const parity = Math.max(0, Math.min(254, Number(parityEl.value) || 0));
+
+    const { parts, version } = splitQRs(raw, fileType, { encoding: 'Z', parity });
 
     const imgBuf = await renderQRImage(parts, version);
 
+    // the header's count is the number of data parts; the rest are parity
+    const numData = parseInt(parts[0].slice(4, 6), 36);
+
     if (parts.length === 1) {
       resultMsg += `A single QR version ${version} will be needed.`;
+    } else if (parts.length > numData) {
+      resultMsg += `Need ${parts.length} QRs of version ${version}: `;
+      resultMsg += `${numData} data + ${parts.length - numData} parity, any ${numData} recover the data.`;
     } else {
       resultMsg += `Need ${parts.length} QRs of version ${version}.`;
     }
@@ -83,6 +96,13 @@ document.addEventListener('drop', (e) => {
   } else if (files.length === 1) {
     inputEl.value = '';
     handleFileOrTextInput(files[0]);
+  }
+});
+
+// redo the last split when the parity count changes
+parityEl.addEventListener('change', () => {
+  if (lastInput !== undefined) {
+    handleFileOrTextInput(lastInput);
   }
 });
 

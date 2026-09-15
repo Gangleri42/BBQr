@@ -6,7 +6,7 @@
 
 from .version import __version__
 from .split import split_qrs
-from .join import join_qrs
+from .join import join_qrs, JoinError
 
 
 

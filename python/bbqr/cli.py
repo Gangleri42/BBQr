@@ -97,6 +97,8 @@ def decode_bbqr(raw):
                         help="Max QR version to use (limits size, default unlimited: 40)")
 @click.option('--min-split', '-m', metavar="NUM", default=1,
                         help="Produce at least this many QR codes (default: 1)")
+@click.option('--parity', '-p', metavar="NUM", default=0, type=click.IntRange(0, 254),
+                        help="Add this many parity QR codes; any N of the series recover the data (default: 0)")
 @click.option('--frame-delay', '-d', metavar="[ms/fr]", default=250, type=int,
                         help="Delay between frame of animation (default: 250ms)")
 @click.option('--scale', '-s', metavar="NUM", default=4,
@@ -106,7 +108,7 @@ def decode_bbqr(raw):
                         type=click.Path(dir_okay=False, writable=True, allow_dash=True))
 @click.option('--fake-data', help="Generate huge empty data", type=int)
 @click.option('--randomize-order', '-r',  help="Shuffle output parts into random ordering", is_flag=True)
-def make_qrs(randomize_order, infile=None, outfile=None, encoding=None, scale=4, max_version=40, frame_delay=250, min_split=1, fake_data=None, filetype=None):
+def make_qrs(randomize_order, infile=None, outfile=None, encoding=None, scale=4, max_version=40, frame_delay=250, min_split=1, parity=0, fake_data=None, filetype=None):
     """Encode file as a series of QR codes"""
 
     if fake_data:
@@ -145,12 +147,17 @@ def make_qrs(randomize_order, infile=None, outfile=None, encoding=None, scale=4,
         print(f"Detected file type: {filetype} -> {FILETYPE_NAMES[filetype]}", file=sys.stderr)
 
     vers, parts = split_qrs(raw, type_code=filetype, encoding=encoding,
-                                    max_version=max_version, min_split=min_split)
+                                    max_version=max_version, min_split=min_split, parity=parity)
 
     num_parts = len(parts)
+    num_data = int(parts[0][4:6], 36)
 
     if len(parts) == 1:
         print(f"A single QR version {vers} will be needed.", file=sys.stderr)
+    elif num_parts > num_data:
+        print(f"Need {num_parts} QR's each of version {vers}: "
+              f"{num_data} data + {num_parts - num_data} parity, any {num_data} recover the data.",
+              file=sys.stderr)
     else:
         print(f"Need {num_parts} QR's each of version {vers}.", file=sys.stderr)
 

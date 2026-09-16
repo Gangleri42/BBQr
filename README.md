@@ -15,6 +15,7 @@ Quick links:
 - [Swift implementation](https://github.com/bitcoinppl/bbqr-swift)
 - [Kotlin implementation](https://github.com/gorunjinian/bbqr-kotlin)
 - [Go implementation](https://github.com/dmonakhov/bbqr-go)
+- [Go implementation with parity parts](https://github.com/Gangleri42/bbqr-go), standard library only, with a CLI twin of `bbqr`
 
 # Specification
 

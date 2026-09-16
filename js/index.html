@@ -52,11 +52,31 @@
     ></textarea>
 
     <p style="text-align: center">
-      <label>
-        Parity QR codes to add:
-        <input id="parity" type="number" min="0" max="254" value="0" style="width: 4rem" />
-      </label>
-      (any N of the series recover the data, N being the count in the header)
+      Any
+      <input
+        id="needed"
+        type="number"
+        min="1"
+        max="1295"
+        value="1"
+        style="width: 4rem"
+        aria-label="QR codes needed"
+      />
+      of
+      <input
+        id="total"
+        type="number"
+        min="1"
+        max="1295"
+        value="1"
+        style="width: 4rem"
+        aria-label="QR codes in total"
+      />
+      QR codes recover the data.
+      <br />
+      <small id="split-hint">
+        The first number cannot go below what the data needs; the rest are parity.
+      </small>
     </p>
 
     <div id="result"></div>
